@@ -1,3 +1,4 @@
+import type { AnyMessageContent } from "@whiskeysockets/baileys";
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { MarkdownTableMode } from "../../config/types.base.js";
 import type { WebInboundMsg } from "./types.js";
@@ -29,6 +30,19 @@ export async function deliverWebReply(params: {
   const replyStarted = Date.now();
   const tableMode = params.tableMode ?? "code";
   const chunkMode = params.chunkMode ?? "length";
+  const explicitReplyToId = replyResult.replyToId?.trim() || undefined;
+  const hasExplicitReplyTag =
+    replyResult.replyToTag === true || replyResult.replyToCurrent === true;
+  const allowQuotedReply =
+    msg.chatType === "group" && (msg.wasMentioned === true || hasExplicitReplyTag);
+  const replyToId = allowQuotedReply
+    ? (explicitReplyToId ?? msg.id?.trim() ?? undefined)
+    : undefined;
+  const replyOptions = replyToId ? { replyToId } : undefined;
+  const replyText = (text: string) =>
+    replyOptions ? msg.reply(text, replyOptions) : msg.reply(text);
+  const sendReplyMedia = (payload: AnyMessageContent) =>
+    replyOptions ? msg.sendMedia(payload, replyOptions) : msg.sendMedia(payload);
   const convertedText = convertMarkdownTables(replyResult.text || "", tableMode);
   const textChunks = chunkMarkdownTextWithMode(convertedText, textLimit, chunkMode);
   const mediaList = replyResult.mediaUrls?.length
@@ -65,7 +79,7 @@ export async function deliverWebReply(params: {
     const totalChunks = textChunks.length;
     for (const [index, chunk] of textChunks.entries()) {
       const chunkStarted = Date.now();
-      await sendWithRetry(() => msg.reply(chunk), "text");
+      await sendWithRetry(() => replyText(chunk), "text");
       if (!skipLog) {
         const durationMs = Date.now() - chunkStarted;
         whatsappOutboundLog.debug(
@@ -106,7 +120,7 @@ export async function deliverWebReply(params: {
       if (media.kind === "image") {
         await sendWithRetry(
           () =>
-            msg.sendMedia({
+            sendReplyMedia({
               image: media.buffer,
               caption,
               mimetype: media.contentType,
@@ -116,7 +130,7 @@ export async function deliverWebReply(params: {
       } else if (media.kind === "audio") {
         await sendWithRetry(
           () =>
-            msg.sendMedia({
+            sendReplyMedia({
               audio: media.buffer,
               ptt: true,
               mimetype: media.contentType,
@@ -127,7 +141,7 @@ export async function deliverWebReply(params: {
       } else if (media.kind === "video") {
         await sendWithRetry(
           () =>
-            msg.sendMedia({
+            sendReplyMedia({
               video: media.buffer,
               caption,
               mimetype: media.contentType,
@@ -139,7 +153,7 @@ export async function deliverWebReply(params: {
         const mimetype = media.contentType ?? "application/octet-stream";
         await sendWithRetry(
           () =>
-            msg.sendMedia({
+            sendReplyMedia({
               document: media.buffer,
               fileName,
               caption,
@@ -175,7 +189,7 @@ export async function deliverWebReply(params: {
         const fallbackText = fallbackTextParts.join("\n");
         if (fallbackText) {
           whatsappOutboundLog.warn(`Media skipped; sent text-only to ${msg.from}`);
-          await msg.reply(fallbackText);
+          await replyText(fallbackText);
         }
       }
     }
@@ -183,6 +197,6 @@ export async function deliverWebReply(params: {
 
   // Remaining text chunks after media
   for (const chunk of remainingText) {
-    await msg.reply(chunk);
+    await replyText(chunk);
   }
 }

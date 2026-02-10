@@ -338,22 +338,24 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
         ),
       };
     },
-    sendText: async ({ to, text, accountId, deps, gifPlayback }) => {
+    sendText: async ({ to, text, accountId, deps, gifPlayback, replyToId }) => {
       const send = deps?.sendWhatsApp ?? getWhatsAppRuntime().channel.whatsapp.sendMessageWhatsApp;
       const result = await send(to, text, {
         verbose: false,
         accountId: accountId ?? undefined,
         gifPlayback,
+        replyToId: replyToId ?? undefined,
       });
       return { channel: "whatsapp", ...result };
     },
-    sendMedia: async ({ to, text, mediaUrl, accountId, deps, gifPlayback }) => {
+    sendMedia: async ({ to, text, mediaUrl, accountId, deps, gifPlayback, replyToId }) => {
       const send = deps?.sendWhatsApp ?? getWhatsAppRuntime().channel.whatsapp.sendMessageWhatsApp;
       const result = await send(to, text, {
         verbose: false,
         mediaUrl,
         accountId: accountId ?? undefined,
         gifPlayback,
+        replyToId: replyToId ?? undefined,
       });
       return { channel: "whatsapp", ...result };
     },

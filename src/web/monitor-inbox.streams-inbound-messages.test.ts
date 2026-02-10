@@ -435,4 +435,44 @@ describe("web monitor inbox", () => {
 
     await listener.close();
   });
+
+  it("sends quoted replies when replyToId is provided", async () => {
+    const onMessage = vi.fn(async (msg) => {
+      await msg.reply("pong", { replyToId: msg.id });
+    });
+
+    const listener = await monitorWebInbox({
+      verbose: false,
+      onMessage,
+      accountId: ACCOUNT_ID,
+      authDir,
+    });
+    const sock = await createWaSocket();
+    const upsert = {
+      type: "notify",
+      messages: [
+        {
+          key: { id: "abc", fromMe: false, remoteJid: "999@s.whatsapp.net" },
+          message: { conversation: "ping" },
+          messageTimestamp: 1_700_000_000,
+          pushName: "Tester",
+        },
+      ],
+    };
+
+    sock.ev.emit("messages.upsert", upsert);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(sock.sendMessage).toHaveBeenCalledWith(
+      "999@s.whatsapp.net",
+      { text: "pong" },
+      expect.objectContaining({
+        quoted: expect.objectContaining({
+          key: expect.objectContaining({ id: "abc", remoteJid: "999@s.whatsapp.net" }),
+        }),
+      }),
+    );
+
+    await listener.close();
+  });
 });

@@ -473,6 +473,7 @@ const ERROR_PATTERNS = {
     "insufficient credits",
     "credit balance",
     "plans & billing",
+    "upgrade your plan",
     "insufficient balance",
   ],
   auth: [

@@ -326,6 +326,21 @@ describe("routeReply", () => {
     );
   });
 
+  it("passes replyToId to WhatsApp outbound sender", async () => {
+    mocks.sendMessageWhatsApp.mockClear();
+    await routeReply({
+      payload: { text: "hi", replyToId: "abc-123" },
+      channel: "whatsapp",
+      to: "+15551234567",
+      cfg: {} as never,
+    });
+    expect(mocks.sendMessageWhatsApp).toHaveBeenCalledWith(
+      "+15551234567",
+      "hi",
+      expect.objectContaining({ replyToId: "abc-123", verbose: false }),
+    );
+  });
+
   it("routes MS Teams via proactive sender", async () => {
     mocks.sendMessageMSTeams.mockClear();
     setActivePluginRegistry(

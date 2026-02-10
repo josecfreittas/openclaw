@@ -238,8 +238,11 @@ The wizard uses it to set your **allowlist/owner** so your own DMs are permitted
 
 ## Reply delivery (threading)
 
-- WhatsApp Web sends standard messages (no quoted reply threading in the current gateway).
-- Reply tags are ignored on this channel.
+- WhatsApp supports quoted replies when a reply id is provided.
+- Reply tags are supported:
+  - `[[reply_to_current]]`
+  - `[[reply_to:<id>]]`
+- If the referenced message is not available in the active in-memory session cache, OpenClaw falls back to a standard (non-quoted) send.
 
 ## Acknowledgment reactions (auto-react on receipt)
 

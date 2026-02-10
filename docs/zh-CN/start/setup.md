@@ -148,6 +148,6 @@ sudo loginctl enable-linger $USER
 
 - [Gateway 网关运行手册](/gateway)（标志、监督、端口）
 - [Gateway 网关配置](/gateway/configuration)（配置模式 + 示例）
-- [Discord](/channels/discord) 和 [Telegram](/channels/telegram)（回复标签 + replyToMode 设置）
+- [WhatsApp](/channels/whatsapp)、[Discord](/channels/discord) 和 [Telegram](/channels/telegram)（回复标签；replyToMode 仅适用于 Discord/Telegram）
 - [OpenClaw 助手设置](/start/openclaw)
 - [macOS 应用](/platforms/macos)（Gateway 网关生命周期）

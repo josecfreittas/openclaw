@@ -151,11 +151,21 @@ export async function monitorWebInbox(options: {
     }
   };
 
+  const sendApi = createWebSendApi({
+    sock: {
+      sendMessage: (jid: string, content: AnyMessageContent, sendOptions) =>
+        sendOptions ? sock.sendMessage(jid, content, sendOptions) : sock.sendMessage(jid, content),
+      sendPresenceUpdate: (presence, jid?: string) => sock.sendPresenceUpdate(presence, jid),
+    },
+    defaultAccountId: options.accountId,
+  });
+
   const handleMessagesUpsert = async (upsert: { type?: string; messages?: Array<WAMessage> }) => {
     if (upsert.type !== "notify" && upsert.type !== "append") {
       return;
     }
     for (const msg of upsert.messages ?? []) {
+      sendApi.rememberMessage(msg);
       recordChannelActivity({
         channel: "whatsapp",
         accountId: options.accountId,
@@ -285,11 +295,15 @@ export async function monitorWebInbox(options: {
           logVerbose(`Presence update failed: ${String(err)}`);
         }
       };
-      const reply = async (text: string) => {
-        await sock.sendMessage(chatJid, { text });
+      const reply = async (text: string, opts?: { replyToId?: string }) => {
+        await sendApi.sendMessage(chatJid, text, undefined, undefined, {
+          replyToId: opts?.replyToId,
+        });
       };
-      const sendMedia = async (payload: AnyMessageContent) => {
-        await sock.sendMessage(chatJid, payload);
+      const sendMedia = async (payload: AnyMessageContent, opts?: { replyToId?: string }) => {
+        await sendApi.sendContent(chatJid, payload, {
+          replyToId: opts?.replyToId,
+        });
       };
       const timestamp = messageTimestampMs;
       const mentionedJids = extractMentionedJids(msg.message as proto.IMessage | undefined);
@@ -363,14 +377,6 @@ export async function monitorWebInbox(options: {
     }
   };
   sock.ev.on("connection.update", handleConnectionUpdate);
-
-  const sendApi = createWebSendApi({
-    sock: {
-      sendMessage: (jid: string, content: AnyMessageContent) => sock.sendMessage(jid, content),
-      sendPresenceUpdate: (presence, jid?: string) => sock.sendPresenceUpdate(presence, jid),
-    },
-    defaultAccountId: options.accountId,
-  });
 
   return {
     close: async () => {

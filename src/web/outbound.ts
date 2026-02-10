@@ -19,6 +19,7 @@ export async function sendMessageWhatsApp(
     mediaUrl?: string;
     gifPlayback?: boolean;
     accountId?: string;
+    replyToId?: string;
   },
 ): Promise<{ messageId: string; toJid: string }> {
   let text = body;
@@ -67,11 +68,13 @@ export async function sendMessageWhatsApp(
     await active.sendComposingTo(to);
     const hasExplicitAccountId = Boolean(options.accountId?.trim());
     const accountId = hasExplicitAccountId ? resolvedAccountId : undefined;
+    const replyToId = options.replyToId?.trim() || undefined;
     const sendOptions: ActiveWebSendOptions | undefined =
-      options.gifPlayback || accountId
+      options.gifPlayback || accountId || replyToId
         ? {
             ...(options.gifPlayback ? { gifPlayback: true } : {}),
             accountId,
+            replyToId,
           }
         : undefined;
     const result = sendOptions
